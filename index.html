@@ -287,6 +287,18 @@
   .history th:not(:first-child), .history td:not(:first-child) { text-align: right; }
   .history td .amt { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
   .history td.pos { color: var(--green); }
+  .history td.neg { color: var(--red); }
+  .history td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .history td small { color: var(--muted); opacity: .7; font-size: 11px; }
+  .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .pill.pos { background: rgba(0,231,1,.15); color: var(--green); }
+  .pill.neg { background: rgba(237,65,99,.15); color: var(--red); }
+  .pill.eq { background: rgba(255,157,0,.15); color: var(--orange); }
+  .hsum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+  .hsum div { background: var(--frame); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .hsum span { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .hsum b { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .hsum b.pos { color: var(--green); } .hsum b.neg { color: var(--red); }
   .history td.empty { text-align: center !important; padding: 24px; color: var(--muted); white-space: normal; }
 
   /* ---------- Modal ---------- */
@@ -368,6 +380,9 @@
     .wallet-btn { padding: 0 12px; }
     .stats { right: 12px; left: 12px; width: auto; top: 72px; }
     .history .hide-sm { display: none; }
+    .history td small { display: none; }
+    .history th, .history td { padding: 10px 5px !important; font-size: 13px; }
+    .pill { padding: 3px 6px; font-size: 11px; }
   }
   @media (max-width: 420px) {
     :root { --cw: 56px; }
@@ -479,14 +494,15 @@
   </div>
 
   <section class="history">
+    <div class="hsum" id="hsum"></div>
     <h3>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b1bad3" stroke-width="2.4" stroke-linecap="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
       Mes paris
     </h3>
-    <table>
-      <thead><tr><th>Jeu</th><th class="hide-sm">Heure</th><th>Mise</th><th>Multi.</th><th>Paiement</th></tr></thead>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Heure</th><th>Résultat</th><th>Mise</th><th>Gain</th><th>Profit</th></tr></thead>
       <tbody id="historyBody"></tbody>
-    </table>
+    </table></div>
   </section>
 </main>
 
@@ -1155,7 +1171,7 @@
     store.set('stats', stats);
     renderStats();
 
-    history.unshift({ t: Date.now(), bet: wagered, mult: r2(mult), payout, profit });
+    history.unshift({ t: Date.now(), bet: wagered, mult: r2(mult), payout, profit, res: special === 'bj' ? 'Blackjack' : profit > 0 ? 'Gagné' : profit < 0 ? 'Perdu' : 'Égalité' });
     history = history.slice(0, 30);
     store.set('history', history);
     renderHistory();
@@ -1401,22 +1417,27 @@
   const COIN = '<svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg>';
   function renderHistory() {
     const body = $('#historyBody');
+    const won = history.reduce((t, x) => t + x.payout, 0), bet = history.reduce((t, x) => t + x.bet, 0), prof = r2(won - bet);
+    $('#hsum').innerHTML = `<div><span>Total misé</span><b>${fmt(bet)}</b></div><div><span>Total gagné</span><b>${fmt(won)}</b></div>` +
+      `<div><span>Profit</span><b class="${prof > 0 ? 'pos' : prof < 0 ? 'neg' : ''}">${prof > 0 ? '+' : ''}${fmt(prof)}</b></div>`;
     if (!history.length) {
-      body.innerHTML = '<tr><td colspan="5" class="empty">Aucun pari pour le moment — place ta première mise !</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="empty">Aucun pari pour le moment. Place ta première mise !</td></tr>';
       return;
     }
     body.innerHTML = history.map((x) => {
       const time = new Date(x.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const pos = x.profit > 0;
+      const res = x.res || (x.profit > 0 ? 'Gagné' : x.profit < 0 ? 'Perdu' : 'Égalité');
+      const cls = x.profit > 0 ? 'pos' : x.profit < 0 ? 'neg' : 'eq';
       return `<tr>
-        <td>♠ Blackjack</td>
-        <td class="hide-sm">${time}</td>
-        <td><span class="amt">${fmt(x.bet)} ${COIN}</span></td>
-        <td>${x.mult.toFixed(2)}×</td>
-        <td class="${pos ? 'pos' : ''}"><span class="amt">${fmt(x.profit)} ${COIN}</span></td>
+        <td>${time}</td>
+        <td><span class="pill ${cls}">${res}</span></td>
+        <td>${fmt(x.bet)}</td>
+        <td>${fmt(x.payout)} <small>${x.mult.toFixed(2)}×</small></td>
+        <td class="${cls}">${x.profit > 0 ? '+' : ''}${fmt(x.profit)}</td>
       </tr>`;
     }).join('');
   }
+
 
   // ---------- Init ----------
   setBet(Number(store.get('bet', 10)));
