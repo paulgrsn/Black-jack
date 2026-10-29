@@ -1,13 +1,13 @@
 # Black-jack
 
-Jeu de blackjack au style « casino crypto » (thème sombre, gros bouton vert « Parier », cartes animées, multiplicateur affiché en cas de gain), joué uniquement avec de l'**argent fictif illimité**.
+Jeu de blackjack au style « casino crypto » (thème sombre, gros bouton vert « Parier », cartes animées, multiplicateur affiché en cas de gain), avec un portefeuille (dépôt, retrait, transactions) et un solde de départ que tu choisis.
 
 ## Jouer
 
 Ouvre simplement `index.html` dans ton navigateur (aucune installation nécessaire).
 
-- Solde de départ : **$1,000.00** fictifs.
-- Bouton **Portefeuille** : recharge ton solde quand tu veux (+$100 à +$10M ou un montant personnalisé) — c'est illimité et rien n'est réel.
+- Au premier lancement, tu choisis ton solde de départ.
+- Bouton **Portefeuille** : dépôts, retraits et historique des transactions.
 - La mise est retirée du solde à chaque pari et les gains sont crédités, comme sur un vrai site.
 - Solde, historique « Mes paris » et statistiques sont sauvegardés dans le navigateur.
 

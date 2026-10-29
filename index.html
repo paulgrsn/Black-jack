@@ -328,6 +328,27 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  .tabs { display: flex; background: var(--table); border-radius: 999px; padding: 4px; gap: 4px; }
+  .tab { flex: 1; background: none; color: #fff; font-weight: 600; padding: 9px 6px; border-radius: 999px; transition: background .15s; }
+  .tab.on { background: var(--line); }
+  .pane { display: flex; flex-direction: column; gap: 12px; }
+  .acct { background: var(--table); border-radius: 6px; padding: 14px 16px; }
+  .acct .k { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .acct .v { font-weight: 800; font-size: 22px; margin-top: 4px; display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+  .methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .method { background: var(--table); color: var(--muted); border: 2px solid var(--line); border-radius: 6px; padding: 10px 4px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .method svg { width: 22px; height: 22px; }
+  .method.on { border-color: var(--blue); color: #fff; }
+  .bet-btn.loading { pointer-events: none; opacity: .8; }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: rot .7s linear infinite; vertical-align: -3px; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .txlist { display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; }
+  .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .tx .d { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .tx .a { text-align: right; font-variant-numeric: tabular-nums; }
+  .tx .a.pos { color: var(--green); }
+  .tx .s { text-align: right; color: var(--green); font-size: 12px; }
+  .txempty { color: var(--muted); text-align: center; padding: 24px; }
   @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
@@ -359,7 +380,7 @@
 <body>
 
 <header class="topbar">
-  <div class="logo"><span class="spade">♠</span><span class="word">Blackjack</span><span class="demo-tag">ARGENT FICTIF</span></div>
+  <div class="logo"><span class="spade">♠</span><span class="word">Blackjack</span></div>
   <div class="wallet">
     <div class="balance" id="balance"><span id="balanceTxt">$0.00</span><svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg></div>
     <button class="wallet-btn" id="walletBtn"><span class="txt">Portefeuille</span><svg class="wicon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg></button>
@@ -414,7 +435,6 @@
 
       <button class="bet-btn" id="betBtn">Parier</button>
 
-      <div class="side-note">Argent 100 % fictif et illimité. Recharge ton solde quand tu veux via <b>Portefeuille</b>.</div>
     </aside>
 
     <section class="table" id="table">
@@ -496,28 +516,69 @@
       <button class="icon-btn modal-close">✕</button>
     </div>
     <div class="modal-body">
-      <div class="notice hidden" id="walletNotice">Solde insuffisant pour ce pari — recharge gratuitement ci-dessous.</div>
-      <div class="infinite">
-        <div class="inf">∞</div>
-        <div class="k">Argent fictif illimité · Solde actuel</div>
-        <div class="v"><span id="walletBal">$0.00</span><svg class="coin" viewBox="0 0 24 24" style="width:20px;height:20px"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg></div>
+      <div class="tabs" id="walletTabs">
+        <button class="tab on" data-tab="deposit">Dépôt</button>
+        <button class="tab" data-tab="withdraw">Retrait</button>
+        <button class="tab" data-tab="tx">Transactions</button>
       </div>
-      <div>
-        <div class="label-row"><span>Dépôt rapide</span></div>
+      <div class="notice hidden" id="walletNotice">Solde insuffisant pour ce pari. Effectue un dépôt pour continuer.</div>
+      <div class="acct">
+        <div class="k">Solde disponible</div>
+        <div class="v"><span id="walletBal">$0.00</span><svg class="coin" style="width:20px;height:20px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg></div>
+      </div>
+      <div class="pane" data-pane="deposit">
+        <div class="label-row"><span>Moyen de paiement</span></div>
+        <div class="methods" id="depMethods">
+          <button class="method on" data-m="Virement bancaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg>Virement</button>
+          <button class="method" data-m="Carte bancaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Carte</button>
+          <button class="method" data-m="Crypto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 8h4.5a2 2 0 0 1 0 4H9h5a2 2 0 0 1 0 4H9V8zM11 6v2M11 16v2"/></svg>Crypto</button>
+        </div>
+        <div class="label-row"><span>Montant</span></div>
         <div class="quick" id="quick"></div>
-      </div>
-      <div>
-        <div class="label-row"><span>Montant personnalisé</span></div>
         <div class="bet-input">
           <div class="field">
-            <input id="depositInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="5000.00">
+            <input id="depositInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+            <svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg>
+          </div>
+        </div>
+        <button class="bet-btn" id="depositBtn">Déposer</button>
+      </div>
+      <div class="pane hidden" data-pane="withdraw">
+        <div class="label-row"><span>Montant du retrait</span><span>Vers : compte bancaire</span></div>
+        <div class="bet-input">
+          <div class="field">
+            <input id="withdrawInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+            <svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg>
+          </div>
+          <button class="mini" id="withdrawMax">Max</button>
+        </div>
+        <button class="bet-btn" id="withdrawBtn">Retirer</button>
+      </div>
+      <div class="pane hidden" data-pane="tx">
+        <div class="txlist" id="txList"></div>
+      </div>
+      <button class="link-btn" id="resetBalance">Fermer le compte et recommencer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Account setup -->
+<div class="overlay hidden" id="setupModal">
+  <div class="modal">
+    <div class="modal-head"><span class="t"><span class="spade" style="color:var(--green)">♠</span> Ouvrir ton compte</span></div>
+    <div class="modal-body">
+      <div class="ins-sub">Choisis le solde de départ de ton compte.</div>
+      <div>
+        <div class="label-row"><span>Solde de départ</span></div>
+        <div class="bet-input">
+          <div class="field">
+            <input id="setupInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
             <svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#00e701"/><text x="12" y="16.5" text-anchor="middle" font-size="13" font-weight="800" fill="#05080a" font-family="Inter,Arial">$</text></svg>
           </div>
         </div>
       </div>
-      <button class="bet-btn" id="depositBtn">Déposer</button>
-      <button class="link-btn" id="resetBalance">Réinitialiser le solde à $1,000.00</button>
-      <div class="fine">Aucun argent réel n'est utilisé. Rien n'est payé, rien n'est retiré.</div>
+      <div class="quick" id="setupQuick"></div>
+      <button class="bet-btn" id="setupBtn">Créer mon compte</button>
     </div>
   </div>
 </div>
@@ -538,7 +599,6 @@
         <li>Arrêt automatique à 21.</li>
         <li>Sabot <b>infini</b> : chaque carte est tirée au hasard parmi 52 avec <code>crypto.getRandomValues</code> — aucune mémoire des cartes précédentes.</li>
       </ul>
-      <div class="fine">Jeu de démonstration avec argent fictif uniquement.</div>
     </div>
   </div>
 </div>
@@ -577,7 +637,7 @@
     get(k, d) { try { const v = localStorage.getItem('bj_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('bj_' + k, JSON.stringify(v)); } catch (e) {} },
   };
-  const START_BALANCE = 1000;
+  const START_BALANCE = 0;
   const DEAL_MS = 420;
 
   // Secure RNG, unbiased
@@ -653,6 +713,7 @@
   })();
 
   // ---------- State ----------
+  const firstRun = store.get('balance', null) === null && (typeof hotData === 'undefined' || hotData.balance == null);
   let balance = Number(store.get('balance', START_BALANCE)) || 0;
   let shown = balance;
   let stats = store.get('stats', { profit: 0, wagered: 0, wins: 0, losses: 0, series: [0] });
@@ -1131,42 +1192,116 @@
   });
 
   // ---------- Wallet ----------
-  const QUICK = [100, 1000, 10000, 100000, 1000000, 10000000];
-  const quick = $('#quick');
+  let txs = store.get('tx', []);
+  const QUICK = [100, 500, 1000, 5000, 10000, 50000];
+  const qLabel = (v) => '$' + (v >= 1e3 ? v / 1e3 + 'K' : v);
   QUICK.forEach((v) => {
     const b = document.createElement('button');
     b.className = 'btn';
-    b.textContent = '+' + (v >= 1e6 ? '$' + v / 1e6 + 'M' : v >= 1e3 ? '$' + v / 1e3 + 'K' : '$' + v);
-    b.addEventListener('click', () => deposit(v));
-    quick.appendChild(b);
+    b.textContent = qLabel(v);
+    b.addEventListener('click', () => { $('#depositInput').value = v.toFixed(2); sfx.click(); });
+    $('#quick').appendChild(b);
+    const s = b.cloneNode(true);
+    s.addEventListener('click', () => { $('#setupInput').value = v.toFixed(2); sfx.click(); });
+    $('#setupQuick').appendChild(s);
   });
-  function deposit(v) {
-    v = r2(v);
-    if (!(v > 0)) return;
-    setBalance(balance + v);
+  let method = 'Virement bancaire';
+  document.querySelectorAll('#depMethods .method').forEach((m) => m.addEventListener('click', () => {
+    document.querySelectorAll('#depMethods .method').forEach((x) => x.classList.toggle('on', x === m));
+    method = m.dataset.m;
+  }));
+  function showTab(name) {
+    document.querySelectorAll('#walletTabs .tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === name));
+    document.querySelectorAll('#walletModal .pane').forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== name));
+    if (name === 'tx') renderTx();
+  }
+  document.querySelectorAll('#walletTabs .tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  function addTx(type, amount, via) {
+    txs.unshift({ t: Date.now(), type, amount, via, ref: Math.random().toString(36).slice(2, 10).toUpperCase() });
+    txs = txs.slice(0, 50);
+    store.set('tx', txs);
+  }
+  function renderTx() {
+    const list = $('#txList');
+    if (!txs.length) { list.innerHTML = '<div class="txempty">Aucune transaction.</div>'; return; }
+    list.innerHTML = txs.map((x) => {
+      const d = new Date(x.t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const pos = x.type !== 'Retrait';
+      return `<div class="tx"><span>${x.type}</span><span class="a ${pos ? 'pos' : ''}">${pos ? '+' : '-'}${fmt(x.amount)}</span>
+        <span class="d">${d} · ${x.via} · #${x.ref}</span><span class="s">Confirmé</span></div>`;
+    }).join('');
+  }
+  async function processing(btn, label) {
+    const txt = btn.textContent;
+    btn.classList.add('loading');
+    btn.innerHTML = `<span class="spin"></span> ${label}`;
+    await sleep(1100 + Math.random() * 700);
+    btn.classList.remove('loading');
+    btn.textContent = txt;
+  }
+  $('#depositBtn').addEventListener('click', async (e) => {
+    const v = r2(parseFloat($('#depositInput').value));
+    if (!(v > 0)) { toast('Saisis un montant de dépôt'); return; }
+    await processing(e.currentTarget, 'Traitement…');
+    setBalance(balance + Math.min(v, 1e12));
+    addTx('Dépôt', v, method);
     sfx.coins();
-    toast(`+${fmt(v)} déposés (argent fictif)`);
+    toast(`Dépôt de ${fmt(v)} confirmé`);
+    $('#depositInput').value = '';
     $('#walletNotice').classList.add('hidden');
     updateControls();
-  }
-  $('#depositBtn').addEventListener('click', () => {
-    const v = parseFloat($('#depositInput').value);
-    if (isFinite(v) && v > 0) { deposit(Math.min(v, 1e12)); $('#depositInput').value = ''; }
   });
-  $('#resetBalance').addEventListener('click', () => { setBalance(START_BALANCE); sfx.click(); toast('Solde réinitialisé à ' + fmt(START_BALANCE)); });
+  $('#withdrawMax').addEventListener('click', () => { $('#withdrawInput').value = balance.toFixed(2); });
+  $('#withdrawBtn').addEventListener('click', async (e) => {
+    const v = r2(parseFloat($('#withdrawInput').value));
+    if (!(v > 0)) { toast('Saisis un montant de retrait'); return; }
+    if (v > balance) { toast('Montant supérieur au solde disponible'); return; }
+    if (S.phase !== 'idle') { toast('Termine la main en cours avant de retirer'); return; }
+    await processing(e.currentTarget, 'Traitement…');
+    setBalance(balance - v);
+    addTx('Retrait', v, 'Compte bancaire');
+    sfx.click();
+    toast(`Retrait de ${fmt(v)} envoyé`);
+    $('#withdrawInput').value = '';
+    updateControls();
+  });
+  $('#resetBalance').addEventListener('click', () => {
+    if (S.phase !== 'idle') { toast('Termine la main en cours d\'abord'); return; }
+    $('#walletModal').classList.add('hidden');
+    openSetup();
+  });
+  function openSetup() {
+    $('#setupInput').value = '';
+    $('#setupModal').classList.remove('hidden');
+  }
+  $('#setupBtn').addEventListener('click', () => {
+    const v = r2(parseFloat($('#setupInput').value));
+    if (!(v >= 0) || isNaN(v)) { toast('Choisis un solde de départ'); return; }
+    txs = []; history = [];
+    stats = { profit: 0, wagered: 0, wins: 0, losses: 0, series: [0] };
+    store.set('stats', stats); store.set('history', history);
+    addTx('Dépôt', v, 'Solde d\'ouverture');
+    setBalance(v);
+    renderStats(); renderHistory();
+    $('#setupModal').classList.add('hidden');
+    sfx.coins();
+    toast(`Compte ouvert avec ${fmt(v)}`);
+    updateControls();
+  });
   function openWallet(insufficient) {
     $('#walletNotice').classList.toggle('hidden', !insufficient);
     $('#walletBal').textContent = fmt(balance);
+    showTab('deposit');
     $('#walletModal').classList.remove('hidden');
   }
   $('#walletBtn').addEventListener('click', () => openWallet(false));
 
   // ---------- Modals ----------
-  document.querySelectorAll('.overlay').forEach((o) => {
+  document.querySelectorAll('.overlay:not(#setupModal)').forEach((o) => {
     o.addEventListener('click', (e) => { if (e.target === o || e.target.closest('.modal-close')) o.classList.add('hidden'); });
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') document.querySelectorAll('.overlay').forEach((o) => o.classList.add('hidden'));
+    if (e.key === 'Escape') document.querySelectorAll('.overlay:not(#setupModal)').forEach((o) => o.classList.add('hidden'));
   });
   $('#rulesBtn').addEventListener('click', () => $('#rulesModal').classList.remove('hidden'));
   $('#keysBtn').addEventListener('click', () => $('#keysModal').classList.remove('hidden'));
@@ -1290,6 +1425,7 @@
   renderStats();
   renderHistory();
   updateControls();
+  if (firstRun) openSetup();
   window.addEventListener('resize', () => { if (!statsEl.classList.contains('hidden')) drawChart(); });
 })();
 </script>
